@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@9.0.0",
+  "description": "Remembrall — offline-first todo",
   "version": "0.0.1",
   "scripts": {
     "build": "nuxt build",
