@@ -1,0 +1,167 @@
+@import "tailwindcss";
+
+/* ── Design tokens ────────────────────────────────────────── */
+:root {
+  --c-bg0: #0d0d14;
+  --c-bg1: #13131f;
+  --c-bg2: #1a1a2a;
+  --c-bg3: #22223a;
+  --c-surface: #1e1e30;
+  --c-surface-hover: #252540;
+  --c-border: rgba(255, 255, 255, 0.07);
+  --c-border-med: rgba(255, 255, 255, 0.12);
+  --c-text: #f0f0ff;
+  --c-text-sec: rgba(210, 210, 255, 0.6);
+  --c-text-muted: rgba(210, 210, 255, 0.35);
+  --c-overdue: #f87171;
+  --c-due: #fb923c;
+  --accent: #f5c211;
+  --accent2: #e66100;
+}
+
+/* ── Animations ───────────────────────────────────────────── */
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+/* ── Page transitions ─────────────────────────────────────── */
+.slide-right-enter-active {
+  animation: slideInRight 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.slide-right-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.slide-right-leave-to {
+  opacity: 0;
+  transform: translateX(-8%);
+}
+
+/* ── Bottom sheet transitions ─────────────────────────────── */
+.sheet-enter-active .sheet-backdrop {
+  animation: fadeIn 0.2s ease;
+}
+.sheet-enter-active .sheet-panel {
+  animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.sheet-leave-active .sheet-backdrop {
+  transition: opacity 0.2s ease;
+}
+.sheet-leave-active .sheet-panel {
+  transition: transform 0.22s ease;
+}
+.sheet-leave-to .sheet-backdrop {
+  opacity: 0;
+}
+.sheet-leave-to .sheet-panel {
+  transform: translateY(100%);
+}
+
+/* ── Base ─────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  background: var(--c-bg0);
+  color: var(--c-text);
+  font-family: -apple-system, system-ui, sans-serif;
+  height: 100%;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+#__nuxt {
+  min-height: 100vh;
+  background: var(--c-bg0);
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Range input accent ───────────────────────────────────── */
+input[type='range'] {
+  accent-color: var(--accent);
+}
+
+/* ── Done-burst animation ─────────────────────────────────── */
+@keyframes burstOverlay {
+  0%   { background: transparent; }
+  25%  { background: rgba(45, 212, 191, 0.18); }
+  100% { background: transparent; }
+}
+@keyframes burstCircle {
+  0%   { transform: scale(0); opacity: 0.8; }
+  55%  { transform: scale(1.3); opacity: 0.5; }
+  100% { transform: scale(2); opacity: 0; }
+}
+@keyframes checkPop {
+  0%   { transform: scale(0) rotate(-20deg); opacity: 0; }
+  55%  { transform: scale(1.25) rotate(6deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes sparkle {
+  0%   { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+}
+
+/* ── Task list TransitionGroup ────────────────────────────── */
+.task-list-leave-active {
+  position: absolute;
+  left: 0;
+  right: 0;
+  transition: transform 0.3s ease-in, opacity 0.25s ease-in;
+  pointer-events: none;
+}
+.task-list-leave-to {
+  transform: translateX(80%);
+  opacity: 0;
+}
+.task-list-move {
+  transition: transform 0.32s ease;
+}
+
+/* ── Install banner transition ────────────────────────────── */
+@keyframes bannerSlideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.banner-enter-active {
+  animation: bannerSlideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.banner-leave-active {
+  transition: transform 0.25s ease-in, opacity 0.2s ease-in;
+}
+.banner-leave-to {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
+/* ── Settings inline-edit input ──────────────────────────── */
+.task-title-input {
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--accent);
+  outline: none;
+  color: var(--c-text);
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  width: 100%;
+  padding: 0 0 2px;
+  caret-color: var(--accent);
+}
