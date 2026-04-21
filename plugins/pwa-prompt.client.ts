@@ -16,15 +16,19 @@ export default defineNuxtPlugin(() => {
     { once: true },
   )
 
-  // Unregister any stale service workers outside our current scope
-  // (e.g. from a previous deploy with wrong NUXT_APP_BASE_URL).
   if ('serviceWorker' in navigator) {
+    // Reload once when a new SW takes control so the page loads fresh assets.
+    let reloading = false
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (reloading) return
+      reloading = true
+      window.location.reload()
+    })
+
+    // Unregister stale SWs from old deploys with wrong scope.
     navigator.serviceWorker.getRegistrations().then((regs) => {
       for (const reg of regs) {
-        const swScope = reg.scope
-        if (!swScope.includes(location.pathname.split('/')[1] || '/')) {
-          reg.unregister()
-        }
+        if (!reg.scope.includes(location.pathname.split('/')[1] || '/')) reg.unregister()
       }
     })
   }

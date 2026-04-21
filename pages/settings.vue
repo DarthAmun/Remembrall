@@ -8,6 +8,20 @@ const { tasks, init, updateTask, deleteTask } = useTasks()
 const { public: { version } } = useRuntimeConfig()
 const { permission: notifPermission, periodicSyncSupported, enable: enableNotifications } = useNotifications()
 
+// ── Update check ───────────────────────────────────────────────
+type UpdateState = 'idle' | 'checking' | 'up-to-date'
+const updateState = ref<UpdateState>('idle')
+
+async function checkForUpdates() {
+  if (!('serviceWorker' in navigator)) return
+  updateState.value = 'checking'
+  const reg = await navigator.serviceWorker.ready
+  await reg.update()
+  // controllerchange fires → reloads automatically if a new SW was found.
+  // If nothing changed after 3s, we're already up to date.
+  setTimeout(() => { updateState.value = 'up-to-date' }, 3000)
+}
+
 onMounted(() => init())
 
 // ── Edit form ──────────────────────────────────────────────────
@@ -531,10 +545,34 @@ const EMOJI_CATS = [
           </div>
           <div :style="{
             padding: '14px 16px',
+            borderBottom: '1px solid var(--c-border)',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }">
             <span style="font-size: 14px; color: var(--c-text-sec);">Storage</span>
             <span style="font-size: 14px; color: var(--c-text-muted);">On-device (offline)</span>
+          </div>
+          <div :style="{
+            padding: '12px 16px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }">
+            <span
+              v-if="updateState === 'up-to-date'"
+              style="font-size: 13px; color: #2dd4bf;"
+            >Up to date ✓</span>
+            <span v-else style="font-size: 14px; color: var(--c-text-sec);">Check for updates</span>
+            <button
+              :disabled="updateState === 'checking'"
+              :style="{
+                background: updateState === 'up-to-date' ? 'none' : 'var(--c-bg3)',
+                border: `1px solid ${updateState === 'up-to-date' ? 'transparent' : 'var(--c-border)'}`,
+                borderRadius: '9px', padding: '6px 14px',
+                color: 'var(--c-text-sec)', fontSize: '13px', fontWeight: 600,
+                cursor: updateState === 'checking' ? 'default' : 'pointer',
+                opacity: updateState === 'checking' ? 0.5 : 1,
+                transition: 'opacity 0.2s',
+              }"
+              @click="checkForUpdates"
+            >{{ updateState === 'checking' ? 'Checking…' : 'Check' }}</button>
           </div>
         </div>
       </div>
