@@ -5,6 +5,7 @@ definePageMeta({ pageTransition: { name: 'slide-right', mode: 'out-in' } })
 useHead({ title: 'Settings – Remembrall' })
 
 const { tasks, init, renameTask, deleteTask } = useTasks()
+const { public: { version } } = useRuntimeConfig()
 
 onMounted(() => init())
 
@@ -268,7 +269,7 @@ function learnedDiff(task: Task): string | null {
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }">
             <span style="font-size: 14px; color: var(--c-text-sec);">Version</span>
-            <span style="font-size: 14px; color: var(--c-text-muted);">1.0.0</span>
+            <span style="font-size: 14px; color: var(--c-text-muted);">{{ version }}</span>
           </div>
           <div :style="{
             padding: '14px 16px',

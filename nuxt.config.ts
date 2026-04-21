@@ -1,11 +1,16 @@
 import tailwindcss from '@tailwindcss/vite'
+import { version } from './package.json'
 
 // @ts-ignore -- process.env is available at Nuxt build time (Node context)
-const appBase: string = process.env.NUXT_APP_BASE_URL ?? '/'
+const appBase: string = process.env.NUXT_APP_BASE_URL ?? '/Remembrall/'
 
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   ssr: false,
+
+  runtimeConfig: {
+    public: { version },
+  },
 
   app: {
     baseURL: appBase,
