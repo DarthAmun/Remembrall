@@ -16,6 +16,7 @@ export default defineNuxtConfig({
     baseURL: appBase,
     head: {
       link: [
+        { rel: 'manifest', href: `${appBase}manifest.webmanifest` },
         { rel: 'icon', type: 'image/x-icon', href: `${appBase}favicon.ico` },
         // iOS home-screen icons (Safari ignores the web manifest for these)
         { rel: 'apple-touch-icon', sizes: '180x180', href: `${appBase}icons/ios/180.png` },
