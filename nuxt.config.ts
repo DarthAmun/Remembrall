@@ -1,8 +1,18 @@
 import tailwindcss from '@tailwindcss/vite'
 
+// @ts-ignore -- process.env is available at Nuxt build time (Node context)
+const appBase: string = process.env.NUXT_APP_BASE_URL ?? '/'
+
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   ssr: false,
+
+  app: {
+    baseURL: appBase,
+    head: {
+      link: [{ rel: 'icon', type: 'image/x-icon', href: `${appBase}favicon.ico` }],
+    },
+  },
 
   typescript: {
     strict: true,
@@ -26,25 +36,37 @@ export default defineNuxtConfig({
       background_color: '#0d0d14',
       display: 'standalone',
       orientation: 'portrait',
-      scope: '/',
-      start_url: '/',
+      scope: appBase,
+      start_url: appBase,
       icons: [
         {
-          src: '/icons/icon-192x192.png',
+          src: `${appBase}icons/icon-192x192.png`,
           sizes: '192x192',
           type: 'image/png',
-          purpose: 'any maskable',
+          purpose: 'any',
         },
         {
-          src: '/icons/icon-512x512.png',
+          src: `${appBase}icons/icon-192x192.png`,
+          sizes: '192x192',
+          type: 'image/png',
+          purpose: 'maskable',
+        },
+        {
+          src: `${appBase}icons/icon-512x512.png`,
           sizes: '512x512',
           type: 'image/png',
-          purpose: 'any maskable',
+          purpose: 'any',
+        },
+        {
+          src: `${appBase}icons/icon-512x512.png`,
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'maskable',
         },
       ],
     },
     workbox: {
-      navigateFallback: '/',
+      navigateFallback: appBase,
       globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
       runtimeCaching: [
         {
