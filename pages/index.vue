@@ -1,18 +1,38 @@
 <script setup lang="ts">
 import type { Task } from '~/composables/useDb'
+import { xpToNextLevel, TITLE_DEFS, type UnlockedBadge } from '~/composables/useGamification'
 
+definePageMeta({ pageTransition: { name: 'slide-right', mode: 'out-in' } })
 useHead({ title: 'Remembrall' })
 
-const { tasks, init, completeTask, snoozeTask, skipTask } = useTasks()
-const { scan } = useScheduler()
+const { tasks, init, snoozeTask, skipTask } = useTasks()
+const { confirmDone, scan } = useScheduler()
+const { profile, checkTitles } = useGamification()
 
 const activeTask = ref<Task | null>(null)
-// ID of the task currently playing the done-burst animation
 const completingId = ref<string | null>(null)
+
+// ── XP bar ────────────────────────────────────────────────────
+const xpData = computed(() => {
+  if (!profile.value) return { pct: 0, current: 0, needed: 100, level: 1, titleLabel: 'Newcomer' }
+  const { current, needed } = xpToNextLevel(profile.value.totalXp)
+  const titleLabel = TITLE_DEFS.find(t => t.key === profile.value!.currentTitle)?.label ?? 'Newcomer'
+  return { pct: Math.min(100, (current / needed) * 100), current, needed, level: profile.value.level, titleLabel }
+})
+
+// ── Celebration payload ───────────────────────────────────────
+const celebrationPayload = ref<{
+  xpEarned: number
+  newBadges: UnlockedBadge[]
+  streak: number
+  leveledUp: boolean
+  newLevel: number
+} | null>(null)
 
 onMounted(async () => {
   await init()
   scan()
+  checkTitles() // side-effect: initialises profile.value
 })
 
 const urgent = computed(() =>
@@ -35,13 +55,24 @@ function handleCardPress(task: Task) {
 async function onDone() {
   if (!activeTask.value) return
   const id = activeTask.value.id
-  activeTask.value = null        // close sheet immediately
+  activeTask.value = null
 
-  completingId.value = id        // show burst on card
-  await new Promise(r => setTimeout(r, 320))  // let burst play
-  completingId.value = null      // clear before status mutates
+  completingId.value = id
+  await new Promise(r => setTimeout(r, 320))
+  completingId.value = null
 
-  await completeTask(id)         // status → idle; card leaves TransitionGroup
+  const xpBefore = profile.value?.totalXp ?? 0
+  const levelBefore = profile.value?.level ?? 1
+
+  const newBadges = await confirmDone(id)
+
+  celebrationPayload.value = {
+    xpEarned: (profile.value?.totalXp ?? 0) - xpBefore,
+    newBadges,
+    streak: profile.value?.currentStreak ?? 0,
+    leveledUp: (profile.value?.level ?? 1) > levelBefore,
+    newLevel: profile.value?.level ?? 1,
+  }
 }
 
 async function onSnooze(ms: number) {
@@ -84,30 +115,6 @@ async function onSkip() {
         </div>
 
         <div style="display: flex; align-items: center; gap: 8px;">
-          <!-- Settings -->
-          <button
-            :style="{
-              width: '40px', height: '40px', borderRadius: '20px',
-              background: 'var(--c-surface)',
-              border: '1px solid var(--c-border)',
-              cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'opacity 0.1s',
-            }"
-            @click="navigateTo('/settings')"
-          >
-            <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
-              <path
-                d="M8.5 11a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"
-                stroke="rgba(210,210,255,0.5)" stroke-width="1.4"
-              />
-              <path
-                d="M13.9 6.4l-.8-1.4-1.3.5a4.8 4.8 0 0 0-.9-.5L10.6 4H7.4l-.3 1a4.8 4.8 0 0 0-.9.5l-1.3-.5-.8 1.4 1 .8a4.9 4.9 0 0 0 0 1l-1 .8.8 1.4 1.3-.5c.3.2.6.4.9.5l.3 1h3.2l.3-1a4.8 4.8 0 0 0 .9-.5l1.3.5.8-1.4-1-.8a4.9 4.9 0 0 0 0-1z"
-                stroke="rgba(210,210,255,0.5)" stroke-width="1.4" stroke-linejoin="round"
-              />
-            </svg>
-          </button>
-
           <!-- Add FAB -->
           <button
             :style="{
@@ -130,6 +137,35 @@ async function onSkip() {
             </svg>
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- XP progress bar -->
+    <div>
+      <div style="height: 4px; background: rgba(255,255,255,0.06);">
+        <div
+          :style="{
+            height: '100%',
+            width: xpData.pct + '%',
+            background: 'linear-gradient(90deg, #2dd4bf, #06b6d4)',
+            borderRadius: '0 2px 2px 0',
+            transition: 'width 0.7s cubic-bezier(0.4, 0, 0.2, 1)',
+          }"
+        />
+      </div>
+      <div style="padding: 6px 20px 8px; display: flex; align-items: center; gap: 8px;">
+        <span
+          :style="{
+            fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '99px',
+            color: '#2dd4bf',
+            background: 'rgba(45,212,191,0.12)',
+            border: '1px solid rgba(45,212,191,0.22)',
+          }"
+        >Lv {{ xpData.level }}</span>
+        <span style="font-size: 12px; color: var(--c-text-muted);">{{ xpData.titleLabel }}</span>
+        <span style="font-size: 11px; color: var(--c-text-muted); margin-left: auto; font-variant-numeric: tabular-nums;">
+          {{ xpData.current }}/{{ xpData.needed }} XP
+        </span>
       </div>
     </div>
 
@@ -236,6 +272,15 @@ async function onSkip() {
         @done="onDone"
         @snooze="onSnooze"
         @skip="onSkip"
+      />
+    </Transition>
+
+    <!-- Celebration sheet -->
+    <Transition name="sheet">
+      <CelebrationSheet
+        v-if="celebrationPayload"
+        v-bind="celebrationPayload"
+        @close="celebrationPayload = null"
       />
     </Transition>
 

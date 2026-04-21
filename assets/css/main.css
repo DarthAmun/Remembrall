@@ -151,6 +151,25 @@ input[type='range'] {
   opacity: 0;
 }
 
+/* ── Confetti burst ──────────────────────────────────────── */
+@keyframes confettiFall {
+  0%   { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+  60%  { opacity: 0.9; }
+  100% { transform: translate(var(--cx), var(--cy)) rotate(var(--cr)) scale(0.2); opacity: 0; }
+}
+
+/* ── Level-up pulse ──────────────────────────────────────── */
+@keyframes levelPulse {
+  0%   { transform: scale(0.5); opacity: 0; }
+  55%  { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1);    opacity: 1; }
+}
+
+/* ── Toast transition (reuses banner slide-up) ───────────── */
+.toast-enter-active { animation: bannerSlideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1); }
+.toast-leave-active { transition: transform 0.22s ease-in, opacity 0.18s ease-in; }
+.toast-leave-to     { transform: translateY(110%); opacity: 0; }
+
 /* ── Settings inline-edit input ──────────────────────────── */
 .task-title-input {
   background: none;

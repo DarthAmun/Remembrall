@@ -1,4 +1,5 @@
 import type { Task } from './useDb'
+import { type UnlockedBadge } from './useGamification'
 
 // ── Constants ──────────────────────────────────────────────────
 const DAY = 86_400_000
@@ -130,11 +131,47 @@ export function useScheduler() {
 
   /**
    * Mark a task done: logs a completion, recomputes learnedInterval,
-   * schedules the next due date, and sets status → idle.
+   * schedules the next due date, sets status → idle, and runs all
+   * gamification hooks (XP, streak, badges, titles).
+   * Returns any badges unlocked by this completion.
    */
-  async function confirmDone(taskId: string): Promise<void> {
+  async function confirmDone(taskId: string): Promise<UnlockedBadge[]> {
     _notified.delete(taskId)
+
+    // Capture task snapshot before completion mutates it
+    const task = useTasks().tasks.value.find(t => t.id === taskId)
+
     await completeTask(taskId)
+
+    if (!task) return []
+
+    const { awardXp, updateStreak, checkBadges, checkTitles } = useGamification()
+
+    // 1. Streak — must run before badge check so streak value is current
+    const now = new Date()
+    const { extended, newStreak } = await updateStreak(now)
+
+    // 2. Base XP: 25 base + 10 if on-time or early + streak bonus (5/day, capped at 50)
+    //    Compare local calendar dates (yyyy-mm-dd) — the full due day counts as on time.
+    const localDate = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    const confirmedDate = localDate(now)
+    const dueDate = localDate(new Date(task.nextDue))
+    // early: confirmed before due day | onTime: same day | overdue: confirmed after due day
+    const punctualityBonus = confirmedDate <= dueDate ? 10 : 0
+    const streakBonus = extended ? Math.min(newStreak * 5, 50) : 0
+    await awardXp(25 + punctualityBonus + streakBonus, 'task-done')
+
+    // 3. Badges
+    const newBadges = await checkBadges({ taskId, task, streak: newStreak })
+    for (const badge of newBadges) {
+      await awardXp(badge.xp, `badge-${badge.id}`)
+    }
+
+    // 4. Titles (no XP, just unlock)
+    await checkTitles()
+
+    return newBadges
   }
 
   /**

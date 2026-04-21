@@ -1,18 +1,14 @@
 <script setup lang="ts">
 // Captures the browser's deferred install prompt and shows a custom banner.
-// iOS doesn't fire beforeinstallprompt so we detect it separately and show
-// Share-sheet instructions instead.
+// The actual beforeinstallprompt capture happens in plugins/pwa-prompt.client.ts
+// (before any component mounts) so we never miss an early-firing event on mobile.
+
+import { _deferredPrompt } from '~/plugins/pwa-prompt.client'
 
 const DISMISS_KEY = 'remembrall-install-dismissed'
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt(): Promise<void>
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
-}
-
 const show = ref(false)
 const isIOS = ref(false)
-const deferredPrompt = ref<BeforeInstallPromptEvent | null>(null)
 
 onMounted(() => {
   // Already installed → never show
@@ -30,18 +26,18 @@ onMounted(() => {
 
   const iosDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream
   if (iosDevice) {
-    // iOS: no install event — show Share → Add to Home Screen instructions
     isIOS.value = true
     show.value = true
     return
   }
 
-  // Android / Chrome: wait for the browser's event
-  window.addEventListener('beforeinstallprompt', (e: Event) => {
-    e.preventDefault()
-    deferredPrompt.value = e as BeforeInstallPromptEvent
+  // Show immediately if the event already fired (early on mobile),
+  // otherwise watch for it to fire later.
+  if (_deferredPrompt.value) {
     show.value = true
-  }, { once: true })
+  } else {
+    watch(_deferredPrompt, (v) => { if (v) show.value = true }, { once: true })
+  }
 })
 
 function dismiss() {
@@ -50,10 +46,10 @@ function dismiss() {
 }
 
 async function install() {
-  if (!deferredPrompt.value) return
-  await deferredPrompt.value.prompt()
-  const { outcome } = await deferredPrompt.value.userChoice
-  deferredPrompt.value = null
+  if (!_deferredPrompt.value) return
+  await _deferredPrompt.value.prompt()
+  const { outcome } = await _deferredPrompt.value.userChoice
+  _deferredPrompt.value = null
   if (outcome === 'accepted') show.value = false
 }
 </script>

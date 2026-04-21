@@ -10,7 +10,15 @@ export default defineNuxtConfig({
   app: {
     baseURL: appBase,
     head: {
-      link: [{ rel: 'icon', type: 'image/x-icon', href: `${appBase}favicon.ico` }],
+      link: [
+        { rel: 'icon', type: 'image/x-icon', href: `${appBase}favicon.ico` },
+        // iOS home-screen icons (Safari ignores the web manifest for these)
+        { rel: 'apple-touch-icon', sizes: '180x180', href: `${appBase}icons/ios/180.png` },
+        { rel: 'apple-touch-icon', sizes: '167x167', href: `${appBase}icons/ios/167.png` },
+        { rel: 'apple-touch-icon', sizes: '152x152', href: `${appBase}icons/ios/152.png` },
+        { rel: 'apple-touch-icon', sizes: '120x120', href: `${appBase}icons/ios/120.png` },
+        { rel: 'apple-touch-icon', sizes: '76x76',   href: `${appBase}icons/ios/76.png` },
+      ],
     },
   },
 
@@ -39,30 +47,16 @@ export default defineNuxtConfig({
       scope: appBase,
       start_url: appBase,
       icons: [
-        {
-          src: `${appBase}icons/icon-192x192.png`,
-          sizes: '192x192',
-          type: 'image/png',
-          purpose: 'any',
-        },
-        {
-          src: `${appBase}icons/icon-192x192.png`,
-          sizes: '192x192',
-          type: 'image/png',
-          purpose: 'maskable',
-        },
-        {
-          src: `${appBase}icons/icon-512x512.png`,
-          sizes: '512x512',
-          type: 'image/png',
-          purpose: 'any',
-        },
-        {
-          src: `${appBase}icons/icon-512x512.png`,
-          sizes: '512x512',
-          type: 'image/png',
-          purpose: 'maskable',
-        },
+        // Standard sizes — browsers and Android pick the closest fit
+        { src: `${appBase}icons/android/launchericon-48x48.png`,   sizes: '48x48',   type: 'image/png', purpose: 'any' },
+        { src: `${appBase}icons/android/launchericon-72x72.png`,   sizes: '72x72',   type: 'image/png', purpose: 'any' },
+        { src: `${appBase}icons/android/launchericon-96x96.png`,   sizes: '96x96',   type: 'image/png', purpose: 'any' },
+        { src: `${appBase}icons/android/launchericon-144x144.png`, sizes: '144x144', type: 'image/png', purpose: 'any' },
+        { src: `${appBase}icons/android/launchericon-192x192.png`, sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: `${appBase}icons/android/launchericon-512x512.png`, sizes: '512x512', type: 'image/png', purpose: 'any' },
+        // Maskable variants (Android adaptive icons — safe area is the inner 80%)
+        { src: `${appBase}icons/android/launchericon-192x192.png`, sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+        { src: `${appBase}icons/android/launchericon-512x512.png`, sizes: '512x512', type: 'image/png', purpose: 'maskable' },
       ],
     },
     workbox: {
@@ -91,8 +85,7 @@ export default defineNuxtConfig({
       installPrompt: true,
     },
     devOptions: {
-      enabled: true,
-      type: 'module',
+      enabled: false,
     },
   },
 })
