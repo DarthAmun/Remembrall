@@ -160,7 +160,6 @@ useHead(() => ({ title: task.value ? `${task.value.title} – Remembrall` : 'Rem
               borderBottom: i < completions.length - 1 ? '1px solid var(--c-border)' : 'none',
             }"
           >
-            <!-- Timeline dot -->
             <div style="display: flex; flex-direction: column; align-items: center; width: 20px;">
               <div :style="{
                 width: '10px', height: '10px', borderRadius: '5px',

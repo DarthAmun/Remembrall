@@ -41,6 +41,9 @@ export default defineNuxtConfig({
   modules: ['@vite-pwa/nuxt'],
 
   pwa: {
+    strategies: 'injectManifest',
+    srcDir: 'service-worker',
+    filename: 'sw.ts',
     registerType: 'autoUpdate',
     manifest: {
       name: 'Remembrall',
@@ -65,27 +68,8 @@ export default defineNuxtConfig({
         { src: `${appBase}icons/android/launchericon-512x512.png`, sizes: '512x512', type: 'image/png', purpose: 'maskable' },
       ],
     },
-    workbox: {
-      navigateFallback: appBase,
+    injectManifest: {
       globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
-      runtimeCaching: [
-        {
-          urlPattern: /^https:\/\/.*\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/,
-          handler: 'StaleWhileRevalidate',
-          options: {
-            cacheName: 'images-cache',
-            expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
-          },
-        },
-        {
-          urlPattern: /\/api\/.*/,
-          handler: 'StaleWhileRevalidate',
-          options: {
-            cacheName: 'api-cache',
-            expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 },
-          },
-        },
-      ],
     },
     client: {
       installPrompt: true,

@@ -158,11 +158,27 @@ export function useTasks() {
     await reload()
   }
 
-  async function addTask(data: { icon: string; title: string; intervalDays: number; category: string }) {
+  async function updateTask(id: string, data: { icon: string; title: string; intervalDays: number; category: string }) {
+    const db = useDb()
+    const task = _tasks.value.find(t => t.id === id)
+    if (!task) return
+    const baseInterval = data.intervalDays * DAY
+    const update: Partial<Task> = { icon: data.icon, title: data.title, category: data.category, baseInterval }
+    if (baseInterval !== task.baseInterval) {
+      const nextDue = Date.now() + baseInterval
+      update.learnedInterval = baseInterval
+      update.nextDue = nextDue
+      update.status = computeStatus(nextDue, task.snoozeUntil)
+    }
+    await db.tasks.update(id, update)
+    await reload()
+  }
+
+  async function addTask(data: { icon: string; title: string; intervalDays: number; category: string; firstDueAt?: number }) {
     const db = useDb()
     const now = Date.now()
     const baseInterval = data.intervalDays * DAY
-    const nextDue = now + baseInterval
+    const nextDue = data.firstDueAt ?? now + baseInterval
     await db.tasks.add({
       id: crypto.randomUUID(),
       title: data.title,
@@ -178,5 +194,5 @@ export function useTasks() {
     await reload()
   }
 
-  return { tasks: _tasks, init, addTask, completeTask, snoozeTask, skipTask, renameTask, deleteTask }
+  return { tasks: _tasks, init, addTask, updateTask, completeTask, snoozeTask, skipTask, renameTask, deleteTask }
 }
