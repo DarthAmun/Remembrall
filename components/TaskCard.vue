@@ -38,6 +38,23 @@ const SPARKLES = [
   { dx:  '16px', dy:  '24px' },
 ]
 
+// Track touch origin so a scroll doesn't trigger a tap
+let _touchStartY = 0
+let _touchStartX = 0
+
+function onTouchStart(e: TouchEvent) {
+  pressed.value = true
+  _touchStartY = e.touches[0].clientY
+  _touchStartX = e.touches[0].clientX
+}
+
+function onTouchEnd(e: TouchEvent) {
+  const dy = Math.abs(e.changedTouches[0].clientY - _touchStartY)
+  const dx = Math.abs(e.changedTouches[0].clientX - _touchStartX)
+  if (dy > 8 || dx > 8) { pressed.value = false; return }
+  onPress()
+}
+
 function onPress() {
   pressed.value = false
   emit('press', props.task)
@@ -65,8 +82,8 @@ function onPress() {
     @mousedown="pressed = true"
     @mouseup="onPress"
     @mouseleave="pressed = false"
-    @touchstart.passive="pressed = true"
-    @touchend="onPress"
+    @touchstart.passive="onTouchStart"
+    @touchend.passive="onTouchEnd"
   >
     <!-- Icon bubble -->
     <div

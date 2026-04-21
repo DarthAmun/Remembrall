@@ -9,6 +9,8 @@ const DISMISS_KEY = 'remembrall-install-dismissed'
 
 const show = ref(false)
 const isIOS = ref(false)
+// True when Chrome hasn't fired beforeinstallprompt — user must install manually via browser menu
+const isManualAndroid = ref(false)
 
 onMounted(() => {
   // Already installed → never show
@@ -31,13 +33,24 @@ onMounted(() => {
     return
   }
 
-  // Show immediately if the event already fired (early on mobile),
-  // otherwise watch for it to fire later.
+  // Show immediately if the event already fired (captured early by the plugin)
   if (_deferredPrompt.value) {
     show.value = true
-  } else {
-    watch(_deferredPrompt, (v) => { if (v) show.value = true }, { once: true })
+    return
   }
+
+  // Watch for the event — it may fire a few seconds after load
+  watch(_deferredPrompt, (v) => { if (v) show.value = true }, { once: true })
+
+  // Chrome throttles beforeinstallprompt heavily (engagement heuristics, cooldowns after
+  // dismissal). After 4s, fall back to showing manual install instructions so the user
+  // always has a path to install regardless of whether the event fires.
+  setTimeout(() => {
+    if (!show.value) {
+      isManualAndroid.value = true
+      show.value = true
+    }
+  }, 4000)
 })
 
 function dismiss() {
@@ -94,15 +107,19 @@ async function install() {
             Tap <strong style="color: var(--c-text-sec);">Share</strong> then
             <strong style="color: var(--c-text-sec);">"Add to Home Screen"</strong>
           </template>
+          <template v-else-if="isManualAndroid">
+            Tap <strong style="color: var(--c-text-sec);">⋮</strong> then
+            <strong style="color: var(--c-text-sec);">"Add to Home Screen"</strong>
+          </template>
           <template v-else>
             Works offline · feels like a native app
           </template>
         </div>
       </div>
 
-      <!-- Install button (Android) or just a dismiss (iOS) -->
+      <!-- Install button: only shown when Chrome gave us the deferred prompt -->
       <button
-        v-if="!isIOS"
+        v-if="!isIOS && !isManualAndroid"
         :style="{
           background: 'linear-gradient(135deg, var(--accent), var(--accent2))',
           border: 'none', borderRadius: '10px',
