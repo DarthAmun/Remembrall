@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Completion } from '~/composables/useDb'
+import { type UnlockedBadge } from '~/composables/useGamification'
 
 definePageMeta({ pageTransition: { name: 'slide-right', mode: 'out-in' } })
 
@@ -7,6 +8,8 @@ const route = useRoute()
 const id = route.params.id as string
 
 const { tasks, init } = useTasks()
+const { confirmDone } = useScheduler()
+const { profile } = useGamification()
 const task = computed(() => tasks.value.find(t => t.id === id))
 
 const completions = ref<Completion[]>([])
@@ -49,6 +52,32 @@ const color = computed(() => task.value ? catColor(task.value.category) : '#8b5c
 const offset = computed(() => task.value ? daysOffset(task.value.nextDue) : 0)
 
 useHead(() => ({ title: task.value ? `${task.value.title} – Remembrall` : 'Remembrall' }))
+
+// ── Early completion ───────────────────────────────────────────
+const completing = ref(false)
+const celebrationPayload = ref<{
+  xpEarned: number; newBadges: UnlockedBadge[]; streak: number
+  leveledUp: boolean; newLevel: number
+} | null>(null)
+
+async function markDoneEarly() {
+  if (completing.value || !task.value) return
+  completing.value = true
+  await new Promise(r => setTimeout(r, 320))
+
+  const xpBefore = profile.value?.totalXp ?? 0
+  const levelBefore = profile.value?.level ?? 1
+  const newBadges = await confirmDone(id)
+
+  celebrationPayload.value = {
+    xpEarned: (profile.value?.totalXp ?? 0) - xpBefore,
+    newBadges,
+    streak: profile.value?.currentStreak ?? 0,
+    leveledUp: (profile.value?.level ?? 1) > levelBefore,
+    newLevel: profile.value?.level ?? 1,
+  }
+  completing.value = false
+}
 </script>
 
 <template>
@@ -204,7 +233,36 @@ useHead(() => ({ title: task.value ? `${task.value.title} – Remembrall` : 'Rem
         </div>
         <div style="font-size: 24px;">📅</div>
       </div>
+
+      <!-- Mark done early -->
+      <button
+        v-if="task.status === 'idle' || task.status === 'snoozed'"
+        :disabled="completing"
+        :style="{
+          width: '100%',
+          background: completing ? 'var(--c-surface)' : 'linear-gradient(135deg, #2dd4bf, #06b6d4)',
+          border: 'none', borderRadius: '14px', padding: '16px',
+          color: completing ? 'var(--c-text-muted)' : '#0d0d14',
+          fontSize: '15px', fontWeight: 700, cursor: completing ? 'default' : 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+          transition: 'all 0.2s',
+          boxShadow: completing ? 'none' : '0 4px 20px rgba(45,212,191,0.35)',
+        }"
+        @click="markDoneEarly"
+      >
+        <span style="font-size: 18px;">{{ completing ? '…' : '✓' }}</span>
+        {{ completing ? 'Marking done…' : 'Mark done early' }}
+      </button>
     </div>
+
+    <!-- Celebration sheet -->
+    <Transition name="sheet">
+      <CelebrationSheet
+        v-if="celebrationPayload"
+        v-bind="celebrationPayload"
+        @close="celebrationPayload = null; navigateTo('/')"
+      />
+    </Transition>
   </div>
 
   <!-- Loading state -->
