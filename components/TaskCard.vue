@@ -52,6 +52,7 @@ function onTouchEnd(e: TouchEvent) {
   const dy = Math.abs(e.changedTouches[0].clientY - _touchStartY)
   const dx = Math.abs(e.changedTouches[0].clientX - _touchStartX)
   if (dy > 8 || dx > 8) { pressed.value = false; return }
+  e.preventDefault() // block the ghost click that would land on the BottomSheet backdrop
   onPress()
 }
 
@@ -83,7 +84,7 @@ function onPress() {
     @mouseup="onPress"
     @mouseleave="pressed = false"
     @touchstart.passive="onTouchStart"
-    @touchend.passive="onTouchEnd"
+    @touchend="onTouchEnd"
   >
     <!-- Icon bubble -->
     <div
